@@ -1,44 +1,37 @@
-# Usa una imagen base de NVIDIA con CUDA
-FROM nvidia/cuda:12.6.0-base-ubuntu22.04
+# Usar Ubuntu 22.04 como imagen base
+FROM ubuntu:22.04
+
+# Establecer variables de entorno para no pedir confirmación durante la instalación
+ENV DEBIAN_FRONTEND=noninteractive
+
+# Instalar las dependencias necesarias
+RUN apt-get update && apt-get install -y \
+    git \
+    build-essential \
+    wget \
+    ffmpeg \
+    curl \
+    bash \
+    libcurl4-openssl-dev && \
+    apt-get clean && rm -rf /var/lib/apt/lists/*
+
+# Clonar el repositorio de whisper.cpp
+RUN git clone https://github.com/ggerganov/whisper.cpp.git /whisper.cpp
 
 # Establecer el directorio de trabajo
-WORKDIR /whisper
+WORKDIR /whisper.cpp
 
-# Agregar el repositorio de NVIDIA y actualizar paquetes
-RUN apt-get update && \
-    apt-get install -y --no-install-recommends \
-    software-properties-common \
-    && add-apt-repository ppa:graphics-drivers/ppa && \
-    apt-get update
+# Construir whisper.cpp
+RUN make
 
-# Instalar cuDNN (última versión compatible con CUDA 12.6)
-RUN apt-get install -y --no-install-recommends \
-    libcudnn8 \
-    libcudnn8-dev \
-    && apt-get clean \
-    && rm -rf /var/lib/apt/lists/*
+# Descargar el modelo base durante la construcción
+RUN /bin/bash ./models/download-ggml-model.sh base
 
-# Instalar dependencias del sistema y herramientas básicas
-RUN apt-get install -y --no-install-recommends \
-    wget \
-    gnupg \
-    lsb-release \
-    ffmpeg \
-    python3-pip \
-    && apt-get clean \
-    && rm -rf /var/lib/apt/lists/*
+# Copiar el script en Bash al contenedor
+COPY scripts/process_audios.sh /whisper/process_audios.sh
 
-# Instalar las dependencias de Python
-COPY requirements.txt ./requirements.txt
-RUN pip3 install --upgrade pip && \
-    pip3 install --no-cache-dir -r requirements.txt
+# Hacer el script ejecutable
+RUN chmod +x /whisper/process_audios.sh
 
-# Copiar los archivos necesarios al contenedor
-COPY python/notes-to-text.py .
-COPY python/test.py .
-
-# Exponer el puerto en el que Flask escuchará
-EXPOSE 8888
-
-# Ejecutar el script Python
-CMD ["python3", "notes-to-text.py"]
+# Configurar el contenedor para ejecutar el script en Bash por defecto
+CMD ["/bin/bash", "/whisper/process_audios.sh"]
