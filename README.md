@@ -34,9 +34,10 @@ This project is designed to automate the process of converting audio files into 
 
 2. **Install Python Dependencies**:
 Ensure you have requests installed:
-   ```bash
+```bash
    pip install requests
 ```
+
 3. ** Run the pipeline**:
     - Place your audio files in the inputs directory.
     - Execute the Python script:
