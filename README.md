@@ -38,7 +38,7 @@ Ensure you have requests installed:
    pip install requests
 ```
 
-3. ** Run the pipeline**:
+3. **Run the pipeline**:
     - Place your audio files in the inputs directory.
     - Execute the Python script:
 ```bash
