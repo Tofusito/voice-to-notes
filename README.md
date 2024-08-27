@@ -77,6 +77,7 @@ Ensure you have requests installed:
 │   └── template.md   # Markdown template used for structuring the output
 ├── main.py           # Main Python script that orchestrates the process
 └── README.md         # Project documentation
+```
 
 ## Additional Information
 
