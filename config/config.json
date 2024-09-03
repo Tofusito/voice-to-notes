@@ -1,7 +1,0 @@
-{
-    "input_dir": "/Users/manuel/Library/Mobile Documents/com~apple~CloudDocs/Notas de voz",
-    "output_dir": "/Users/manuel/GIT/GITHUB/voice-to-notes/outputs",
-    "output_md_dir": "/Users/manuel/Library/Mobile Documents/iCloud~md~obsidian/Documents/Notes/00_Inbox",
-    "model": "llama3.1:8b-instruct-q8_0",
-    "api_url": "http://127.0.0.1:11434/api/chat"
-}
