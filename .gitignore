@@ -41,3 +41,4 @@ tmp/*
 # Other ignored files
 .idea/
 .vscode/
+config/config.json
