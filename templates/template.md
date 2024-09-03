@@ -4,6 +4,7 @@
 2. **Idioma:** Si el texto no está en español, tradúcelo completamente al español.
 3. **Formato de salida:** Elabora una nota en formato Markdown siguiendo la estructura detallada a continuación.
 
+Omite estas instrucciones en la generación de la nota Markdown, sólo ten en cuenta lo que viene a continuación.
 ---
 
 # Título
