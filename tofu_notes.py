@@ -1,14 +1,8 @@
 import os
 import subprocess
-import requests
-import json
 import time
 import re
-
-# Archivos y rutas
-CONFIG_DIR = "config"
-CONFIG_FILE = os.path.join(CONFIG_DIR, "config.json")
-TEMPLATE_FILE = "templates/template.md"
+from python.checks import load_config, setup_ollama_and_model, print_status, save_config
 
 def print_banner(message):
     """
@@ -17,56 +11,6 @@ def print_banner(message):
     print("\n" + "=" * 60)
     print(f"{message:^60}")
     print("=" * 60 + "\n")
-
-def print_status(message):
-    """
-    Imprime un mensaje de estado simple.
-    """
-    print(f"➡️  {message}")
-
-def get_valid_directory_path(prompt):
-    """
-    Solicita al usuario una ruta de directorio y verifica que exista.
-    Si no existe, solicita la ruta nuevamente.
-    """
-    while True:
-        path = input(prompt)
-        if os.path.isdir(path):
-            return path
-        else:
-            print(f"❌ Error: El directorio '{path}' no existe. Por favor, intenta nuevamente.")
-
-def load_config():
-    """
-    Carga la configuración desde un archivo config.json.
-    Si no existe, solicita al usuario las rutas y guarda la configuración.
-    """
-    if not os.path.exists(CONFIG_DIR):
-        os.makedirs(CONFIG_DIR)
-
-    if os.path.exists(CONFIG_FILE):
-        print_status("Cargando configuración desde config.json...")
-        with open(CONFIG_FILE, 'r') as file:
-            config = json.load(file)
-    else:
-        print_status("config.json no encontrado. Solicitando rutas al usuario...")
-        input_dir = get_valid_directory_path("Por favor, ingresa la ruta COMPLETA de la carpeta de input con las notas de voz: ")
-        output_dir = get_valid_directory_path("Por favor, ingresa la ruta COMPLETA del directorio de output para los archivos markdown: ")
-        output_md_dir = get_valid_directory_path("Por favor, ingresa la ruta COMPLETA del directorio para los archivos markdown generados: ")
-
-        config = {
-            "input_dir": input_dir,
-            "output_dir": output_dir,
-            "output_md_dir": output_md_dir,
-            "model": "llama3.1:latest",
-            "api_url": "http://127.0.0.1:11434/api/chat"
-        }
-
-        with open(CONFIG_FILE, 'w') as file:
-            json.dump(config, file, indent=4)
-        print_status("Configuración guardada en config.json.")
-
-    return config
 
 def run_docker_container(config):
     """
@@ -82,8 +26,8 @@ def run_docker_container(config):
              "-v", f"{config['output_dir']}:/whisper/output", 
              "whisper-cpp-alpine"], 
             check=True,
-            stdout=subprocess.DEVNULL,  # Redirigir la salida estándar a DEVNULL
-            stderr=subprocess.DEVNULL   # Redirigir la salida de error a DEVNULL
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL
         )
         print_status("Procesamiento de audio completado con éxito.")
     except subprocess.CalledProcessError as e:
@@ -107,22 +51,13 @@ def send_request(content, config, title_request=False):
         "Content-Type": "application/json"
     }
 
-    if title_request:
-        data = {
-            "model": config["model"],
-            "messages": [
-                {"role": "user", "content": f"Dado el siguiente texto, dame SOLO un filename con el formato Titulo_de_la_nota que explique fácil de que va el texto, sólo el filename:\n\n{content}"}
-            ],
-            "stream": False
-        }
-    else:
-        data = {
-            "model": config["model"],
-            "messages": [
-                {"role": "user", "content": content}
-            ],
-            "stream": False
-        }
+    data = {
+        "model": config["model"],
+        "messages": [
+            {"role": "user", "content": content}
+        ],
+        "stream": False
+    }
     
     print_status(f"Enviando {'solicitud de título' if title_request else 'solicitud'} a la API...")
     response = requests.post(config["api_url"], headers=headers, data=json.dumps(data))
@@ -213,11 +148,14 @@ if __name__ == "__main__":
     # Carga la configuración
     config = load_config()
 
-    # Primero, ejecuta el contenedor Docker
+    # Configura Ollama y el modelo
+    setup_ollama_and_model(config)
+
+    # Ejecuta el contenedor Docker
     run_docker_container(config)
 
-    # Luego, carga el template
-    template = load_template(TEMPLATE_FILE)
+    # Carga el template
+    template = load_template("templates/template.md")
 
     # Procesa los archivos de texto
     process_files(template, config)
