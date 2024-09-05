@@ -12,10 +12,52 @@ def print_banner(message):
     print(f"{message:^60}")
     print("=" * 60 + "\n")
 
+def build_docker_image(image_name, dockerfile_dir):
+    """
+    Realiza el build de una imagen de Docker usando el Dockerfile en el directorio especificado.
+    """
+    print_status(f"Construyendo la imagen Docker '{image_name}'...")
+    
+    try:
+        # Ejecutar el comando de construcción de la imagen
+        subprocess.run(["docker", "build", "-t", image_name, dockerfile_dir], check=True)
+        print_status(f"Imagen Docker '{image_name}' construida con éxito.")
+    except subprocess.CalledProcessError as e:
+        print(f"❌ Error al construir la imagen Docker: {e}")
+        raise
+
+def docker_image_exists(image_name):
+    """
+    Verifica si una imagen de Docker ya existe.
+    """
+    try:
+        result = subprocess.run(
+            ["docker", "images", "-q", image_name],
+            check=True,
+            capture_output=True,
+            text=True
+        )
+        return bool(result.stdout.strip())  # Si hay un resultado, la imagen existe
+    except subprocess.CalledProcessError as e:
+        print(f"❌ Error al verificar la imagen Docker: {e}")
+        return False
+
 def run_docker_container(config):
     """
     Ejecuta el contenedor Docker para procesar los archivos de audio con Whisper.cpp.
+    Verifica si la imagen existe, si no, la construye a partir del Dockerfile.
     """
+    image_name = "whisper-cpp-alpine"  # Nombre de la imagen que se construirá
+    dockerfile_dir = os.path.dirname(os.path.abspath("tofu_notes.py"))  # Directorio donde está el Dockerfile
+    
+    # Verificar si la imagen ya existe
+    if not docker_image_exists(image_name):
+        print_status(f"La imagen Docker '{image_name}' no existe. Procediendo a construirla...")
+        build_docker_image(image_name, dockerfile_dir)
+    else:
+        print_status(f"La imagen Docker '{image_name}' ya existe. No es necesario reconstruir.")
+
+    # Ejecutar el contenedor
     print_banner("Iniciando procesamiento con Whisper.cpp")
     print_status("Ejecutando el contenedor Docker...")
     
@@ -24,7 +66,7 @@ def run_docker_container(config):
             ["docker", "run", "-it", "--rm", 
              "-v", f"{config['input_dir']}:/whisper/input",
              "-v", f"{config['output_dir']}:/whisper/output", 
-             "whisper-cpp-alpine"], 
+             image_name],  # Usamos la imagen verificada o construida
             check=True,
             stdout=subprocess.DEVNULL,
             stderr=subprocess.DEVNULL
