@@ -40,11 +40,6 @@ git clone https://github.com/yourusername/voice-to-notes.git
 cd voice-to-notes
 ```
 
-2. Install the magical ingredients (Python packages):
-```bash
-pip install -r requirements.txt
-```
-
 ## 🚀 Usage
 
 1. 🎵 Place your audio files in the `input` directory. Think of it as the "To Be Transformed" pile.

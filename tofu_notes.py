@@ -1,7 +1,9 @@
 import os
+import sys
 import subprocess
 import time
 import re
+import requests
 from python.checks import load_config, setup_ollama_and_model, print_status, save_config
 
 def print_banner(message):
@@ -46,7 +48,24 @@ def run_docker_container(config):
     """
     Ejecuta el contenedor Docker para procesar los archivos de audio con Whisper.cpp.
     Verifica si la imagen existe, si no, la construye a partir del Dockerfile.
+    Solo se ejecuta si hay archivos en el directorio de input.
     """
+    input_dir = config.get("input_dir")
+    
+    # Verificar si el directorio de entrada existe y tiene archivos
+    if input_dir and os.path.isdir(input_dir):
+        # Listar solo archivos no ocultos
+        files = [f for f in os.listdir(input_dir) if os.path.isfile(os.path.join(input_dir, f)) and not f.startswith('.')]
+        
+        if not files:
+            print(f"No se detectaron archivos en {input_dir}. Docker no se ejecutará.")
+            sys.exit(1)  # Esto detendrá la ejecución del programa completamente
+        
+        print(f"Archivos detectados en {input_dir}, continuando con la ejecución del contenedor Docker...")
+    else:
+        print(f"Error: El directorio '{input_dir}' no existe o no está configurado correctamente.")
+        return
+
     image_name = "whisper-cpp-alpine"  # Nombre de la imagen que se construirá
     dockerfile_dir = os.path.dirname(os.path.abspath("tofu_notes.py"))  # Directorio donde está el Dockerfile
     
